@@ -1,124 +1,30 @@
 ```tsx
-import { useState, useCallback, useMemo } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import { useToast } from "@/hooks/use-toast";
 import ProviderCard from "@/components/ProviderCard";
 import TimeSlotGrid from "@/components/TimeSlotGrid";
 import BookingSummary from "@/components/BookingSummary";
 import PatientSwitcher from "@/components/PatientSwitcher";
-import { useSharedBookings } from "@/hooks/useSharedBookings";
 import {
   provider,
   generateSlots,
-  getExistingBooking,
   PATIENTS,
-  PatientInfo,
-  TimeSlot,
-  Booking,
 } from "@/data/scheduleData";
 import { CalendarDays } from "lucide-react";
 
 const Index = () => {
-  const [currentPatient, setCurrentPatient] = useState<PatientInfo | null>(null);
+  const [currentPatient, setCurrentPatient] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
-  const [slots, setSlots] = useState<TimeSlot[]>(generateSlots(new Date()));
-  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [slots, setSlots] = useState(generateSlots(new Date()));
 
-  const { bookings, addBooking, isSlotBooked } = useSharedBookings();
-  const { toast } = useToast();
-
-  const displaySlots = useMemo(() => {
-    return slots.map((slot) =>
-      isSlotBooked(slot.id)
-        ? { ...slot, status: "booked" as const }
-        : slot
-    );
-  }, [slots, bookings, isSlotBooked]);
-
-  const handlePatientSwitch = useCallback((patient: PatientInfo) => {
-    setCurrentPatient(patient);
-    setSelectedSlotId(null);
-    setIsConfirmed(false);
-  }, []);
-
-  const handleDateSelect = useCallback((date: Date | undefined) => {
+  const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
     setSelectedDate(date);
     setSlots(generateSlots(date));
     setSelectedSlotId(null);
-    setIsConfirmed(false);
-  }, []);
-
-  const handleSlotSelect = useCallback(
-    (slot: TimeSlot) => {
-      if (!currentPatient) {
-        toast({
-          variant: "destructive",
-          title: "No Patient Selected",
-          description: "Please select a patient first.",
-        });
-        return;
-      }
-
-      if (isSlotBooked(slot.id)) {
-        toast({
-          variant: "destructive",
-          title: "Slot Already Booked",
-          description: "This slot has already been booked.",
-        });
-        return;
-      }
-
-      const existing = getExistingBooking(
-        bookings,
-        currentPatient.id,
-        selectedDate
-      );
-
-      if (existing) {
-        toast({
-          variant: "destructive",
-          title: "Already Booked",
-          description: "Only one booking per day is allowed.",
-        });
-        return;
-      }
-
-      setSelectedSlotId(slot.id);
-    },
-    [currentPatient, bookings, selectedDate, isSlotBooked, toast]
-  );
-
-  const handleConfirm = useCallback(() => {
-    if (!selectedSlotId || !currentPatient) return;
-
-    const selectedSlot = slots.find((s) => s.id === selectedSlotId);
-    if (!selectedSlot) return;
-
-    const booking: Booking = {
-      bookingId: "SLT-" + (1001 + bookings.length),
-      patientId: currentPatient.id,
-      slotId: selectedSlot.id,
-      date: format(selectedDate, "yyyy-MM-dd"),
-      slotLabel: selectedSlot.label,
-      providerName: provider.name,
-    };
-
-    addBooking(booking);
-    setIsConfirmed(true);
-
-    toast({
-      title: "Appointment Confirmed!",
-      description: selectedSlot.label + " booked successfully.",
-    });
-  }, [selectedSlotId, currentPatient, slots, bookings.length, selectedDate, addBooking, toast]);
-
-  const selectedSlot = useMemo(
-    () => displaySlots.find((s) => s.id === selectedSlotId) ?? null,
-    [displaySlots, selectedSlotId]
-  );
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -130,7 +36,7 @@ const Index = () => {
           </div>
           <PatientSwitcher
             currentPatient={currentPatient}
-            onSwitch={handlePatientSwitch}
+            onSwitch={setCurrentPatient}
           />
         </div>
       </header>
@@ -153,6 +59,9 @@ const Index = () => {
 
           <section className="flex-1">
             <h2 className="text-lg font-semibold mb-2">Available Times</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              {format(selectedDate, "EEEE, MMMM d, yyyy")}
+            </p>
 
             {!currentPatient ? (
               <div className="flex flex-col items-center justify-center h-[400px] text-center border border-dashed rounded-xl">
@@ -161,7 +70,7 @@ const Index = () => {
                 </h2>
 
                 <p className="text-sm mb-4">
-                  Please select a patient to view available slots.
+                  Please select a patient to continue.
                 </p>
 
                 <div className="text-xs">
@@ -170,7 +79,7 @@ const Index = () => {
                   </span>
 
                   <div className="mt-3 flex flex-wrap gap-2 justify-center">
-                    {PATIENTS.slice(0, 6).map((p) => (
+                    {PATIENTS.slice(0, 6).map((p: any) => (
                       <span
                         key={p.id}
                         className="px-3 py-1 bg-muted rounded-md text-xs"
@@ -185,17 +94,19 @@ const Index = () => {
             ) : (
               <>
                 <TimeSlotGrid
-                  slots={displaySlots}
+                  slots={slots}
                   selectedSlotId={selectedSlotId}
-                  onSelect={handleSlotSelect}
+                  onSelect={(slot: any) => setSelectedSlotId(slot.id)}
                 />
 
                 <BookingSummary
                   provider={provider}
                   selectedDate={selectedDate}
-                  selectedSlot={selectedSlot}
-                  isConfirmed={isConfirmed}
-                  onConfirm={handleConfirm}
+                  selectedSlot={
+                    slots.find((s: any) => s.id === selectedSlotId) || null
+                  }
+                  isConfirmed={false}
+                  onConfirm={() => {}}
                 />
               </>
             )}
