@@ -276,7 +276,7 @@ const Index = () => {
 
         <section
           data-testid="available-patients-card"
-          className="mb-6 rounded-xl border border-border bg-card p-4 shadow-card"
+          className="mb-6 w-full rounded-xl border border-border bg-card p-4 shadow-card lg:w-[30%]"
         >
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -296,7 +296,7 @@ const Index = () => {
 
           <ul
             data-testid="available-patients-list"
-            className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
+            className="space-y-2"
           >
             {PATIENTS.map((patient) => (
               <li
