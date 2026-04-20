@@ -1,5 +1,4 @@
 ```tsx
-// (imports unchanged)
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -100,15 +99,20 @@ const Index = () => {
 
   const handleSlotSelect = useCallback((slot: TimeSlot) => {
     if (!currentPatient) {
-      toast({ variant: "destructive", title: "No Patient Selected", description: "Please search and select a patient first." });
+      toast({
+        variant: "destructive",
+        title: "No Patient Selected",
+        description: "Please search and select a patient first.",
+      });
       return;
     }
+
     if (isSlotBooked(slot.id)) {
       refresh();
       toast({
         variant: "destructive",
         title: "Slot Already Booked",
-        description: "This slot has already been booked by another patient. Please select a different time.",
+        description: "This slot has already been booked by another patient.",
       });
       return;
     }
@@ -119,7 +123,12 @@ const Index = () => {
       toast({
         variant: "destructive",
         title: "Already Booked",
-        description: `You already have an appointment on this date (Slot ID: ${existing.bookingId}, Time: ${existing.slotLabel}). Only one booking per day is allowed.`,
+        description:
+          "You already have an appointment on this date (Slot ID: " +
+          existing.bookingId +
+          ", Time: " +
+          existing.slotLabel +
+          "). Only one booking per day is allowed.",
       });
       return;
     }
@@ -128,13 +137,18 @@ const Index = () => {
     setConflictSlotId(null);
     setIsConfirmed(false);
     setBookingFailed(false);
-  }, [selectedDate, bookings, currentPatient, isSlotBooked, toast]);
+  }, [selectedDate, bookings, currentPatient, isSlotBooked, toast, refresh]);
 
   const handleConfirm = useCallback(async () => {
     if (!selectedSlotId || !currentPatient) return;
+    if (confirmInFlightRef.current) return;
+    confirmInFlightRef.current = true;
 
     const selectedSlot = slots.find((s) => s.id === selectedSlotId);
-    if (!selectedSlot) return;
+    if (!selectedSlot) {
+      confirmInFlightRef.current = false;
+      return;
+    }
 
     const booking: Booking = {
       bookingId: "SLT-" + (1001 + bookings.length),
@@ -145,7 +159,16 @@ const Index = () => {
       providerName: provider.name,
     };
 
-    addBooking(booking);
+    const success = addBooking(booking);
+
+    if (!success) {
+      refresh();
+      setSelectedSlotId(null);
+      setBookingFailed(true);
+      confirmInFlightRef.current = false;
+      return;
+    }
+
     setCurrentBooking(booking);
     setIsConfirmed(true);
 
@@ -153,7 +176,9 @@ const Index = () => {
       title: "Appointment Confirmed!",
       description: selectedSlot.label + " booked successfully.",
     });
-  }, [selectedSlotId, selectedDate, slots, bookings.length, currentPatient, addBooking, toast]);
+
+    confirmInFlightRef.current = false;
+  }, [selectedSlotId, selectedDate, slots, bookings.length, currentPatient, addBooking, toast, refresh]);
 
   const selectedSlot = useMemo(
     () => displaySlots.find((s) => s.id === selectedSlotId) ?? null,
@@ -211,7 +236,6 @@ const Index = () => {
               </span>
             </div>
 
-            {/* ✅ SAFE UI ADDITION */}
             {!currentPatient ? (
               <div className="flex flex-col items-center justify-center h-[350px] text-center border border-dashed rounded-xl">
                 <p className="text-sm mb-3 text-muted-foreground">
