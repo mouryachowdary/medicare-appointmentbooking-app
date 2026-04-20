@@ -34,19 +34,6 @@ const Index = () => {
   const { bookings, addBooking, isSlotBooked, refresh } = useSharedBookings();
   const { toast } = useToast();
 
-  const prevBookingsLenRef = useRef(bookings.length);
-  useEffect(() => {
-    if (prevBookingsLenRef.current > 0 && bookings.length === 0) {
-      setSelectedSlotId(null);
-      setConflictSlotId(null);
-      setIsConfirmed(false);
-      setBookingFailed(false);
-      setCurrentBooking(null);
-      setValidatingSlotId(null);
-    }
-    prevBookingsLenRef.current = bookings.length;
-  }, [bookings.length]);
-
   const bookedSlotIds = useMemo(() => {
     const ids = new Set(bookings.map((b) => b.slotId));
     try {
@@ -89,41 +76,45 @@ const Index = () => {
     setCurrentBooking(null);
   }, []);
 
-  const handleSlotSelect = useCallback((slot: TimeSlot) => {
-    if (!currentPatient) {
-      toast({
-        variant: "destructive",
-        title: "No Patient Selected",
-        description: "Please search and select a patient first.",
-      });
-      return;
-    }
-    if (isSlotBooked(slot.id)) {
-      refresh();
-      toast({
-        variant: "destructive",
-        title: "Slot Already Booked",
-        description: "This slot has already been booked.",
-      });
-      return;
-    }
+  const handleSlotSelect = useCallback(
+    (slot: TimeSlot) => {
+      if (!currentPatient) {
+        toast({
+          variant: "destructive",
+          title: "No Patient Selected",
+          description: "Please select a patient first.",
+        });
+        return;
+      }
 
-    const existing = getExistingBooking(bookings, currentPatient.id, selectedDate);
-    if (existing) {
-      setBookingFailed(true);
-      toast({
-        variant: "destructive",
-        title: "Already Booked",
-        description: "Only one booking per day is allowed.",
-      });
-      return;
-    }
+      if (isSlotBooked(slot.id)) {
+        refresh();
+        toast({
+          variant: "destructive",
+          title: "Slot Already Booked",
+          description: "This slot has already been booked.",
+        });
+        return;
+      }
 
-    setSelectedSlotId(slot.id);
-    setConflictSlotId(null);
-    setIsConfirmed(false);
-    setBookingFailed(false);
-  }, [selectedDate, bookings, currentPatient, isSlotBooked, toast]);
+      const existing = getExistingBooking(bookings, currentPatient.id, selectedDate);
+      if (existing) {
+        setBookingFailed(true);
+        toast({
+          variant: "destructive",
+          title: "Already Booked",
+          description: "Only one booking per day is allowed.",
+        });
+        return;
+      }
+
+      setSelectedSlotId(slot.id);
+      setConflictSlotId(null);
+      setIsConfirmed(false);
+      setBookingFailed(false);
+    },
+    [currentPatient, selectedDate, bookings, isSlotBooked, toast, refresh]
+  );
 
   const handleConfirm = useCallback(() => {
     if (!selectedSlotId || !currentPatient) return;
@@ -132,7 +123,7 @@ const Index = () => {
     if (!selectedSlot) return;
 
     const booking: Booking = {
-      bookingId: `SLT-${1001 + bookings.length}`,
+      bookingId: "SLT-" + (1001 + bookings.length),
       patientId: currentPatient.id,
       slotId: selectedSlot.id,
       date: format(selectedDate, "yyyy-MM-dd"),
@@ -148,7 +139,7 @@ const Index = () => {
       title: "Appointment Confirmed!",
       description: `${selectedSlot.label} booked successfully.`,
     });
-  }, [selectedSlotId, selectedDate, slots, bookings, currentPatient, addBooking, toast]);
+  }, [selectedSlotId, currentPatient, slots, bookings.length, selectedDate, addBooking, toast]);
 
   const selectedSlot = useMemo(
     () => displaySlots.find((s) => s.id === selectedSlotId) ?? null,
@@ -163,10 +154,7 @@ const Index = () => {
             <CalendarDays className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold">MedSchedule</h1>
           </div>
-          <PatientSwitcher
-            currentPatient={currentPatient}
-            onSwitch={handlePatientSwitch}
-          />
+          <PatientSwitcher currentPatient={currentPatient} onSwitch={handlePatientSwitch} />
         </div>
       </header>
 
@@ -175,7 +163,6 @@ const Index = () => {
 
           <aside className="w-full lg:w-[30%]">
             <ProviderCard provider={provider} />
-
             <div className="mt-6 bg-card p-4 rounded-xl">
               <h3 className="mb-3 text-sm font-semibold">Select Date</h3>
               <Calendar
@@ -191,18 +178,14 @@ const Index = () => {
 
             {!currentPatient ? (
               <div className="flex flex-col items-center justify-center h-[400px] text-center border border-dashed rounded-xl">
-                <h2 className="text-lg font-semibold mb-2">
-                  No Patient Selected
-                </h2>
+                <h2 className="text-lg font-semibold mb-2">No Patient Selected</h2>
 
                 <p className="text-sm mb-4">
                   Please select a patient to view available slots.
                 </p>
 
                 <div className="text-xs">
-                  <span className="font-medium">
-                    Available users to search:
-                  </span>
+                  <span className="font-medium">Available users to search:</span>
 
                   <div className="mt-3 flex flex-wrap gap-2 justify-center">
                     {PATIENTS.slice(0, 6).map((p) => (
