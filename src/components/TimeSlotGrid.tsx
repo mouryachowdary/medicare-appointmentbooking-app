@@ -33,23 +33,25 @@ const TimeSlotGrid = ({
         const isSelected = selectedSlotId === slot.id;
         const isValidating = validatingSlotId === slot.id;
         const isConflict = conflictSlotId === slot.id;
+        const isPast = slot.status === "past";
         const isBooked = slot.status === "booked" || slot.status === "recently-booked";
+        const isUnavailable = isPast || isBooked;
 
         return (
           <button
             key={slot.id}
             data-testid={`slot-${slot.label.replace(/\s+/g, "-").toLowerCase()}`}
-            disabled={isBooked || isValidating}
+            disabled={isUnavailable || isValidating}
             onClick={() => onSelect(slot)}
             className={cn(
               "relative flex flex-col items-center justify-center rounded-lg border-2 px-4 py-4 font-display text-sm font-semibold transition-colors",
-              !isBooked && !isSelected && !isConflict &&
+              !isUnavailable && !isSelected && !isConflict &&
                 "border-border bg-card text-foreground hover:border-primary hover:bg-primary/5",
               isSelected && !isConflict &&
                 "border-primary bg-primary/10 text-primary",
               isValidating && "cursor-wait border-primary bg-primary/10 text-primary",
-              isBooked && !isConflict &&
-                "cursor-not-allowed border-border bg-muted text-muted-foreground line-through opacity-60",
+              isUnavailable && !isConflict &&
+                "cursor-not-allowed border-border bg-muted text-muted-foreground opacity-60",
               isConflict &&
                 "cursor-not-allowed border-destructive bg-destructive/10 text-destructive"
             )}
@@ -65,6 +67,11 @@ const TimeSlotGrid = ({
             {isConflict && (
               <span className="mt-1 text-[10px] font-medium uppercase tracking-wider text-destructive">
                 Just Booked
+              </span>
+            )}
+            {isPast && !isConflict && (
+              <span className="mt-1 text-[10px] font-medium uppercase tracking-wider">
+                Unavailable
               </span>
             )}
             {isBooked && !isConflict && (

@@ -21,6 +21,7 @@ import { CalendarDays, AlertTriangle, CheckCircle2, Users } from "lucide-react";
 const Index = () => {
   const [currentPatient, setCurrentPatient] = useState<PatientInfo | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [now, setNow] = useState<Date>(() => new Date());
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [validatingSlotId, setValidatingSlotId] = useState<string | null>(null);
   const [conflictSlotId, setConflictSlotId] = useState<string | null>(null);
@@ -60,15 +61,45 @@ const Index = () => {
     return ids;
   }, [bookings]);
 
+  // Keep today's slot availability aligned with real time.
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setNow(new Date());
+    }, 60_000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const isSelectedDateToday = useMemo(
+    () =>
+      selectedDate.getFullYear() === now.getFullYear() &&
+      selectedDate.getMonth() === now.getMonth() &&
+      selectedDate.getDate() === now.getDate(),
+    [selectedDate, now]
+  );
+
+  const currentMinutes = useMemo(() => now.getHours() * 60 + now.getMinutes(), [now]);
+
+  const toMinutes = useCallback((time: string) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + minutes;
+  }, []);
+
   // Apply booked status to slots
   const displaySlots = useMemo(
     () =>
-      slots.map((slot) =>
-        bookedSlotIds.has(slot.id)
-          ? { ...slot, status: "booked" as const }
-          : slot
-      ),
-    [slots, bookedSlotIds]
+      slots.map((slot) => {
+        if (bookedSlotIds.has(slot.id)) {
+          return { ...slot, status: "booked" as const };
+        }
+
+        if (isSelectedDateToday && toMinutes(slot.time) <= currentMinutes) {
+          return { ...slot, status: "past" as const };
+        }
+
+        return slot;
+      }),
+    [slots, bookedSlotIds, isSelectedDateToday, currentMinutes, toMinutes]
   );
 
   useEffect(() => {
@@ -79,6 +110,20 @@ const Index = () => {
     setSelectedSlotId(null);
     setValidatingSlotId(null);
   }, [selectedSlotId, bookedSlotIds, isConfirmed, validatingSlotId]);
+
+  useEffect(() => {
+    if (!selectedSlotId || isConfirmed) return;
+
+    const selected = displaySlots.find((slot) => slot.id === selectedSlotId);
+    if (selected?.status === "past") {
+      setSelectedSlotId(null);
+      toast({
+        variant: "destructive",
+        title: "Slot Unavailable",
+        description: "This time has passed. Please choose a later slot.",
+      });
+    }
+  }, [selectedSlotId, displaySlots, isConfirmed, toast]);
 
   const handlePatientSwitch = useCallback((patient: PatientInfo) => {
     setCurrentPatient(patient);
@@ -136,6 +181,18 @@ const Index = () => {
     if (!selectedSlotId || !currentPatient) return;
     if (confirmInFlightRef.current) return;
     confirmInFlightRef.current = true;
+
+    const selectedDisplaySlot = displaySlots.find((slot) => slot.id === selectedSlotId);
+    if (!selectedDisplaySlot || selectedDisplaySlot.status === "past") {
+      setSelectedSlotId(null);
+      toast({
+        variant: "destructive",
+        title: "Slot Unavailable",
+        description: "This time has passed. Please choose a later slot.",
+      });
+      confirmInFlightRef.current = false;
+      return;
+    }
 
     const existing = getExistingBooking(bookings, currentPatient.id, selectedDate);
     if (existing) {
@@ -206,7 +263,7 @@ const Index = () => {
       description: `Booking ID: ${booking.bookingId} | Patient: ${currentPatient.id} | ${format(selectedDate, "MMM d")} at ${selectedSlot.label}`,
     });
     confirmInFlightRef.current = false;
-  }, [selectedSlotId, selectedDate, slots, bookings, currentPatient, isSlotBooked, addBooking, toast]);
+  }, [selectedSlotId, selectedDate, slots, displaySlots, bookings, currentPatient, isSlotBooked, addBooking, toast]);
 
   const selectedSlot = useMemo(
     () => displaySlots.find((s) => s.id === selectedSlotId) ?? null,

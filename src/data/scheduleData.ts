@@ -2,7 +2,7 @@ export interface TimeSlot {
   id: string;
   time: string;
   label: string;
-  status: "available" | "booked" | "recently-booked";
+  status: "available" | "booked" | "recently-booked" | "past";
 }
 
 export interface Provider {
