@@ -274,6 +274,50 @@ const Index = () => {
           </div>
         )}
 
+        <section
+          data-testid="available-patients-card"
+          className="mb-6 rounded-xl border border-border bg-card p-4 shadow-card"
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              <h3 className="font-display text-sm font-semibold text-foreground">
+                Available Patients
+              </h3>
+            </div>
+            <span className="rounded-full bg-primary/10 px-2.5 py-1 font-display text-xs font-semibold text-primary">
+              {PATIENTS.length}
+            </span>
+          </div>
+
+          <p className="mb-3 font-body text-xs text-muted-foreground">
+            Demo users you can search in the patient selector.
+          </p>
+
+          <ul
+            data-testid="available-patients-list"
+            className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            {PATIENTS.map((patient) => (
+              <li
+                key={patient.id}
+                className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2"
+              >
+                <div>
+                  <p className="font-display text-sm font-semibold text-foreground">
+                    {patient.name}
+                  </p>
+                  <p className="font-body text-xs text-muted-foreground">ID: {patient.id}</p>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Search className="h-3.5 w-3.5" />
+                  Search key
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <div className="flex flex-col gap-8 lg:flex-row">
           <aside className="w-full lg:w-[30%]">
             <ProviderCard provider={provider} />
@@ -291,47 +335,6 @@ const Index = () => {
                 }}
                 className="pointer-events-auto rounded-md"
               />
-            </div>
-
-            <div
-              data-testid="available-patients-card"
-              className="mt-6 rounded-xl border border-border bg-card p-4 shadow-card"
-            >
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-primary" />
-                  <h3 className="font-display text-sm font-semibold text-foreground">
-                    Available Patients
-                  </h3>
-                </div>
-                <span className="rounded-full bg-primary/10 px-2.5 py-1 font-display text-xs font-semibold text-primary">
-                  {PATIENTS.length}
-                </span>
-              </div>
-
-              <p className="mb-3 font-body text-xs text-muted-foreground">
-                Demo users you can search in the patient selector.
-              </p>
-
-              <ul data-testid="available-patients-list" className="space-y-2">
-                {PATIENTS.map((patient) => (
-                  <li
-                    key={patient.id}
-                    className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2"
-                  >
-                    <div>
-                      <p className="font-display text-sm font-semibold text-foreground">
-                        {patient.name}
-                      </p>
-                      <p className="font-body text-xs text-muted-foreground">ID: {patient.id}</p>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Search className="h-3.5 w-3.5" />
-                      Search key
-                    </div>
-                  </li>
-                ))}
-              </ul>
             </div>
           </aside>
 
