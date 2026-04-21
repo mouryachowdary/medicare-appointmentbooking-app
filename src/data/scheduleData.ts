@@ -93,6 +93,8 @@ export function generateSlots(date: Date): TimeSlot[] {
     { time: "15:30", label: "3:30 PM" },
     { time: "16:00", label: "4:00 PM" },
     { time: "16:30", label: "4:30 PM" },
+    { time: "17:00", label: "5:00 PM" },
+    { time: "17:30", label: "5:30 PM" },
   ];
 
   return baseSlots.map((slot) => ({
